@@ -37,10 +37,53 @@
           margin-right: 5px;
           width: 10px;
           }
+
+          #menu {
+          background: #fff;
+          position: absolute;
+          z-index: 1;
+          top: 10px;
+          right: 10px;
+          border-radius: 3px;
+          width: 120px;
+          border: 1px solid rgba(0, 0, 0, 0.4);
+          font-family: 'Open Sans', sans-serif;
+          }
+          
+          #menu a {
+          font-size: 13px;
+          color: #404040;
+          display: block;
+          margin: 0;
+          padding: 0;
+          padding: 10px;
+          text-decoration: none;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+          text-align: center;
+          }
+          
+          #menu a:last-child {
+          border: none;
+          }
+          
+          #menu a:hover {
+          background-color: #f8f8f8;
+          color: #404040;
+          }
+          
+          #menu a.active {
+          background-color: #3887be;
+          color: #ffffff;
+          }
+          
+          #menu a.active:hover {
+          background: #3074a4;
+          }
     </style>
 </head>
 <body>
 
+<nav id="menu"></nav>
 <div id='map'></div>
 
 <div id="high-legend" class="legend">
@@ -55,6 +98,8 @@
   <div><span style='background-color:#8B4225'></span>34333.3333333333</div>
   <div><span style='background-color:#723122'></span>50000</div>
   </div>
+
+
 
 <script>
 
@@ -80,7 +125,7 @@ var mapConfig = {
         'id': 'wikimedia-layer',
         'source': 'wikimedia',
         'minzoom': 0,
-        'maxzoom': 22
+        'maxzoom': 5 //22
       }]
     }
   };
@@ -139,11 +184,12 @@ function polyPaintFctZoom(){
   var vectorSourceLayer2 = "public.mvt_from_point_data";
   var vectorProps = "?limit=10000"
   var vectorUrl2 = vectorServer + vectorSourceLayer2 + "/{z}/{x}/{y}.pbf" + vectorProps;
-
+  
+  var vectorLayerColor = "blue";
  
   map.on("load", function() {
 
-    map.addSource('build', {
+    map.addSource('osm', {
       "type": "vector",
       "tiles": ["http://localhost:789/services/osm-2020-02-10-v3.11_canada_quebec/tiles/{z}/{x}/{y}.pbf"],
       "minzoom": 0,
@@ -155,16 +201,56 @@ function polyPaintFctZoom(){
     // To get wide rendered boundaries we
     // need two layers, one for the boundaries
     // and one for the fill
-    var vectorLayerColor = "blue";
     var vectorLayerOutline = {
-      "id": "build" + "-outline",
-      "source": "build",
+      "id": "oms_water_fill",
+      "source": "osm",
       "source-layer": 'water',
       "filter": ["==", "$type", "Polygon"],
       "type": "fill",
       "paint":  {
-        'fill-color': 'blue',
+        "fill-color": "hsl(205, 56%, 73%)",
           "fill-opacity": 0.5
+      },
+      'layout': {
+        'visibility': 'visible'
+      }
+    };
+    map.addLayer(vectorLayerOutline);
+
+    var vectorLayerOutline = {
+      "id": "oms_boundary_line",
+      "source": "osm",
+      "source-layer": 'boundary',
+      "filter": ["==", "$type", "LineString"],
+      "type": "line",
+      "paint":  {
+        "line-width": 1.5,
+        "line-color": 'black',
+        "line-opacity" : 0.5,
+        "line-dasharray": [0.2]
+      },
+      'layout': {
+        'visibility': 'visible'
+      }
+    };
+    map.addLayer(vectorLayerOutline);
+
+    var vectorLayerOutline = {
+      "id": "osm_major_roads",
+      "source": "osm",
+      "source-layer": 'transportation',
+      "filter": [
+        "all",
+        ["==", "$type", "LineString"]/*,
+        ["==", "class", "motorway"]*/
+      ],
+      "layout": {"line-cap": "round", "line-join": "round", 'visibility': 'visible'},
+      "type": "line",
+      "paint": {
+        "line-color": "grey",
+        "line-offset": 0,
+        "line-opacity" : 0.25,
+        "line-width": {"base": 1.4, "stops": [[8, 1], [16, 10]]}
       }
     };
     map.addLayer(vectorLayerOutline);
@@ -177,6 +263,22 @@ function polyPaintFctZoom(){
       "maxzoom": 22
     });
 
+    var vectorLayerOutline = {
+      "id": "oms_park_fill",
+      "source": "osm",
+      "source-layer": 'park',
+      "filter": ["==", "$type", "Polygon"],
+      "type": "fill",
+      "paint": {
+        "fill-color": "#E1EBB0",
+        "fill-opacity": {"base": 1, "stops": [[5, 0], [9, 0.75]]}
+      },
+      'layout': {
+        'visibility': 'visible'
+      }
+    };
+    map.addLayer(vectorLayerOutline);
+    
 
 
     // To get wide rendered boundaries we
@@ -191,6 +293,9 @@ function polyPaintFctZoom(){
       "paint":  {
         "line-width": 1.5,
         "line-color": 'white'
+      },
+      'layout': {
+        'visibility': 'visible'
       }
     };
     map.addLayer(vectorLayerOutline);
@@ -203,7 +308,10 @@ function polyPaintFctZoom(){
       "source": vectorSourceLayer1,
       "source-layer": 'default',
       "type": "fill",
-      "paint":  polyPaintFctZoom()
+      "paint":  polyPaintFctZoom(),
+      'layout': {
+        'visibility': 'visible'
+      }
     };
     map.addLayer(vectorLayerFill);
 
@@ -228,11 +336,14 @@ function polyPaintFctZoom(){
       "paint" :{
           "circle-color": 'red',
           "circle-radius": 3
-        }
+        },
+      'layout': {
+        'visibility': 'visible'
+      }
     });
 
 
-
+    // Click on feature
     function featureHtml(f) {
         var p = f.properties;
         var h = "<p>";
@@ -246,6 +357,7 @@ function polyPaintFctZoom(){
         return h
       }
 
+    
     function addLayerBehavior(layer) {
  
 
@@ -269,7 +381,65 @@ function polyPaintFctZoom(){
 
     addLayerBehavior(vectorSourceLayer1+"-fill");
     addLayerBehavior(vectorSourceLayer2+'-circle');
+
 });
+
+
+  // Toggle visibility on/off
+  // After the last frame rendered before the map enters an "idle" state.
+  map.on('idle', () => {
+    // If these layers were not added to the map, abort
+    if (!map.getLayer(vectorSourceLayer2 + '-circle') || 
+      !map.getLayer(vectorSourceLayer1 + '-fill')) {
+    return;
+    }
+    
+    // Enumerate ids of the layers.
+    const toggleableLayerIds = [vectorSourceLayer1 + '-fill', vectorSourceLayer2 + '-circle'];
+    
+    // Set up the corresponding toggle button for each layer.
+    for (const id of toggleableLayerIds) {
+      // Skip layers that already have a button set up.
+      if (document.getElementById(id)) {
+        continue;
+      }
+      
+      // Create a link.
+      const link = document.createElement('a');
+      link.id = id;
+      link.href = '#';
+      link.textContent = id;
+      link.className = 'active';
+      
+      // Show or hide layer when the toggle is clicked.
+      link.onclick = function (e) {
+        const clickedLayer = this.textContent;
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const visibility = map.getLayoutProperty(
+          clickedLayer,
+          'visibility'
+        );
+        
+        // Toggle layer visibility by changing the layout object's visibility property.
+        if (visibility === 'visible') {
+          map.setLayoutProperty(clickedLayer, 'visibility', 'none');
+          this.className = '';
+        } else {
+          this.className = 'active';
+          map.setLayoutProperty(
+            clickedLayer,
+            'visibility',
+            'visible'
+          );
+        }
+      };
+      
+      const layers = document.getElementById('menu');
+      layers.appendChild(link);
+    }
+  });
 
 </script>
 
