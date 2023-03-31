@@ -62,3 +62,16 @@ services:
         - ./config/featureserv_config.toml:/app/featureserv_config.toml:ro
       networks:
         - webapp
+
+  # https://github.com/consbio/mbtileserver#tilejson-api
+  # Can serve mbtiles + access with endpoint like "http://localhost:789/services/osm-2020-02-10-v3.11_canada_quebec/tiles/{z}/{x}/{y}.pbf"
+  # Where we've downloaded osm tiles for quebec from https://www.maptiler.com/ and placed them in ./tiles/osm-2020-02-10-v3.11_canada_quebec.mbtiles
+  mbtileserver:
+      image: consbio/mbtileserver:latest
+      container_name: mbtileserver
+      entrypoint: /mbtileserver --enable-reload-signal
+      restart: always
+      ports:
+          - 789:8000
+      volumes:
+          - ../tiles:/tilesets
