@@ -1,3 +1,7 @@
+
+# Tiles
+tiles/
+
 # Docker env variables
 .env
 
