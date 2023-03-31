@@ -1,0 +1,24 @@
+[Server]
+# Accept connections on this subnet (default accepts on all)
+HttpHost = "0.0.0.0"
+
+# IP ports to listen on
+HttpPort = 9000
+
+# String to return for Access-Control-Allow-Origin header
+CORSOrigins = "*"
+
+# set Debug to true to run in debug mode (can also be set on cmd-line)
+Debug = true
+
+[Paging]
+# The default number of features in a response
+LimitDefault = 20
+# Maxium number of features in a response
+LimitMax = 10000
+
+[Metadata]
+# Title for this service
+Title = "GIS - Buildings pg-featureserv"
+# Description of this service
+Description = "GIS - Buildings Feature Server"

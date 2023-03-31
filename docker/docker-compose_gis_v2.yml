@@ -1,0 +1,64 @@
+# pg-tileserv Docker Compose example setup.
+#
+# To build/run, `docker compose -f docker-compose_gis_v2.yml up` from within . (docker directory)
+#
+version: "3"
+
+networks:
+  webapp:
+
+services:
+  pg_tileserv_gis:
+    image: pramsey/pg_tileserv:latest-alpine-3.12
+    build:
+      dockerfile: Dockerfile.alpine
+      args:
+        VERSION: latest-alpine-3.12
+
+    container_name:  pg_tileserv_gis
+
+    shm_size: 5gb 
+    
+    environment: 
+      - DATABASE_URL=postgresql://alex:password@scoring-bi-ia.ssq.local:5052/gis
+
+    command: "--config /app/tileserv_config.toml"
+
+    volumes:
+      - ./config/tileserv_config.toml:/app/tileserv_config.toml:ro
+      
+    ports:
+      - 7900:7800
+
+    networks:
+      - webapp
+
+  # From https://www.crunchydata.com/blog/production-postgis-vector-tiles-caching
+  varnish_cache :
+    image: eeacms/varnish
+    ports:
+      - '80:6081'
+    environment:
+      BACKENDS: 'pg_tileserv_gis:7800'
+      DNS_ENABLED: 'false'
+      COOKIES: 'true'
+      PARAM_VALUE: '-p default_ttl=600'
+    networks:
+      - webapp
+    depends_on:
+      - pg_tileserv_gis
+
+  # https://gist.github.com/jsanz/2d2b6a277bc466e47ee4f7d86403dcc6
+  pg_featureserv_gis:
+      image: pramsey/pg_featureserv
+      command: "--config /app/featureserv_config.toml"
+
+      environment: 
+        - DATABASE_URL=postgresql://alex:password@scoring-bi-ia.ssq.local:5052/gis
+
+      ports:
+        - 416:9000
+      volumes:
+        - ./config/featureserv_config.toml:/app/featureserv_config.toml:ro
+      networks:
+        - webapp
