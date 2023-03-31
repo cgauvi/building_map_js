@@ -1,6 +1,6 @@
 # pg-tileserv Docker Compose example setup.
 #
-# To build/run, `docker compose -f docker-compose_gis_v2.yml up` from within . (docker directory)
+# To build/run, `docker compose -f docker-compose_gis_v2.yml --env-file ./config/.env up` from within . (docker directory)
 #
 version: "3"
 
@@ -20,7 +20,7 @@ services:
     shm_size: 5gb 
     
     environment: 
-      - DATABASE_URL=postgresql://alex:password@scoring-bi-ia.ssq.local:5052/gis
+      - DATABASE_URL=$POSTGRES_CONNECTION_STRING
 
     command: "--config /app/tileserv_config.toml"
 
@@ -54,7 +54,7 @@ services:
       command: "--config /app/featureserv_config.toml"
 
       environment: 
-        - DATABASE_URL=postgresql://alex:password@scoring-bi-ia.ssq.local:5052/gis
+        - DATABASE_URL=$POSTGRES_CONNECTION_STRING
 
       ports:
         - 416:9000
