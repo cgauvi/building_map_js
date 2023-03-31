@@ -10,6 +10,7 @@
     <script src="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.css" rel="stylesheet" />
     
+ 
     <style>
         body { margin:0; padding:0; }
         #map { position:absolute; top:0; bottom:0; width:100%; }
@@ -57,6 +58,8 @@
 
 <script>
 
+
+ 
 var mapConfig = {
     'container': 'map',
     'center': [0,0],
@@ -139,6 +142,32 @@ function polyPaintFctZoom(){
 
  
   map.on("load", function() {
+
+    map.addSource('build', {
+      "type": "vector",
+      "tiles": ["http://localhost:789/services/osm-2020-02-10-v3.11_canada_quebec/tiles/{z}/{x}/{y}.pbf"],
+      "minzoom": 0,
+      "maxzoom": 22
+    });
+
+
+
+    // To get wide rendered boundaries we
+    // need two layers, one for the boundaries
+    // and one for the fill
+    var vectorLayerColor = "blue";
+    var vectorLayerOutline = {
+      "id": "build" + "-outline",
+      "source": "build",
+      "source-layer": 'water',
+      "filter": ["==", "$type", "Polygon"],
+      "type": "fill",
+      "paint":  {
+        'fill-color': 'blue',
+          "fill-opacity": 0.5
+      }
+    };
+    map.addLayer(vectorLayerOutline);
 
     // Layers read from sources
     map.addSource(vectorSourceLayer1, {
