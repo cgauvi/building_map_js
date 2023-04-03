@@ -9,7 +9,10 @@
     
     <script src="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.css" rel="stylesheet" />
+
+ 
     
+
  
     <style>
         body { margin:0; padding:0; }
@@ -103,14 +106,17 @@
 
 <script>
 
-
  
+
 var mapConfig = {
     'container': 'map',
     'center': [0,0],
     'zoom': 1,
     'hash': true,
-    'style': {
+    //"style" : "https://maputnik.github.io/osm-liberty/style.json"
+    //"style" : "https://raw.githubusercontent.com/openmaptiles/osm-bright-gl-style/master/style.json"
+    "style" : "https://raw.githubusercontent.com/cgauvi/building_map_js/master/styles/osm_light_custom.json" 
+    /*'style': {
       'version': 8,
       'sources': {
         'wikimedia': {
@@ -126,12 +132,14 @@ var mapConfig = {
         'source': 'wikimedia',
         'minzoom': 0,
         'maxzoom': 5 //22
-      }]
-    }
+      }],
+      "glyphs": "https://orangemug.github.io/font-glyphs/glyphs/{fontstack}/{range}.pbf" // Required to add the street labels
+    }*/
   };
 
-
+  
 var map = new maplibregl.Map(mapConfig);
+
 
 // Zoom control
 map.addControl(new maplibregl.NavigationControl());
@@ -189,9 +197,18 @@ function polyPaintFctZoom(){
  
   map.on("load", function() {
 
+    /*
+    ==================
+    OSM layers:
+
+     - Buildings
+     - Tax data
+    ==================
+    */
+
     map.addSource('osm', {
       "type": "vector",
-      "tiles": ["http://localhost:789/services/osm-2020-02-10-v3.11_canada_quebec/tiles/{z}/{x}/{y}.pbf"],
+      "tiles": ["http://localhost:789/services/osm_openmaptiles_max_zoom_14/tiles/{z}/{x}/{y}.pbf"],
       "minzoom": 0,
       "maxzoom": 22
     });
@@ -255,14 +272,7 @@ function polyPaintFctZoom(){
     };
     map.addLayer(vectorLayerOutline);
 
-    // Layers read from sources
-    map.addSource(vectorSourceLayer1, {
-      "type": "vector",
-      "tiles": [vectorUrl1],
-      "minzoom": 0,
-      "maxzoom": 22
-    });
-
+    
     var vectorLayerOutline = {
       "id": "oms_park_fill",
       "source": "osm",
@@ -278,9 +288,77 @@ function polyPaintFctZoom(){
       }
     };
     map.addLayer(vectorLayerOutline);
+
     
+    // https://github.com/openmaptiles/maptiler-basic-gl-style/blob/master/style.json
+    var vectorLayerOutline = {
+      "id": "osm_transportation_names",
+      "source": "osm",
+      "type": 'symbol',
+      "source-layer": "transportation_name",
+      "filter": ["==", "$type", "LineString"],
+      "layout": {
+        "symbol-placement": "line",
+        "text-field": "{name:latin} {name:nonlatin}",
+        "text-font": ["Noto Sans Regular"],
+        "text-letter-spacing": 0.1,
+        "text-rotation-alignment": "map",
+        "text-size": {"base": 1.4, "stops": [[10, 8], [20, 14]]},
+        "text-transform": "uppercase",
+        "visibility": "visible"
+      },
+      "paint": {
+        "text-color": "#000",
+        "text-halo-color": "hsl(0, 0%, 100%)",
+        "text-halo-width": 2
+      }
+    };
+    map.addLayer(vectorLayerOutline);
 
+    var vectorLayerOutline = {
+      "id": "place_names",
+      "source": "osm",
+      "type": 'symbol',
+      "source-layer": "place",
+      "layout": {
+        "text-field": "{name:latin} {name:nonlatin}",
+        "text-font": ["Noto Sans Regular"],
+        "text-letter-spacing": 0.1,
+        "text-rotation-alignment": "map",
+        "text-size": {"base": 1.4, "stops": [[10, 8], [20, 14]]},
+        "text-transform": "uppercase",
+        "visibility": "visible"
+      },
+      "paint": {
+        "text-color": "#000",
+        "text-halo-color": "hsl(0, 0%, 100%)",
+        "text-halo-width": 2
+      }
+    };
+    map.addLayer(vectorLayerOutline);
 
+    
+ 
+    /*
+    ==================
+    Custom layers:
+
+     - Buildings
+     - Tax data
+    ==================
+    */
+  
+
+    // ====== Buildings  ====== //
+ 
+    map.addSource(vectorSourceLayer1, {
+      "type": "vector",
+      "tiles": [vectorUrl1],
+      "minzoom": 0,
+      "maxzoom": 22
+    });
+
+    
     // To get wide rendered boundaries we
     // need two layers, one for the boundaries
     // and one for the fill
@@ -316,18 +394,16 @@ function polyPaintFctZoom(){
     map.addLayer(vectorLayerFill);
 
     
+    // ====== Tax data  ====== //
+
     map.addSource(vectorSourceLayer2, {
       "type": "vector",
       "tiles": [vectorUrl2],
       "minzoom": 0,
       "maxzoom": 22
-        //cluster: true,
-        //clusterMaxZoom: 12, // Max zoom to cluster points on
-        //clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
     });
 
    
- 
     map.addLayer({
       "id": vectorSourceLayer2 + '-circle',
       "source": vectorSourceLayer2,
@@ -342,6 +418,53 @@ function polyPaintFctZoom(){
       }
     });
 
+
+    /*
+    // Try serving features as geojson + clustering: very slow compared with vector tiles
+    map.addSource(vectorSourceLayer2, {
+      "type": "geojson",
+      "data" : "http://localhost:416/collections/public.gic_geo_role_eval_cleaned_pc_adm_da/items?limit=100000000",
+      "cluster": true,
+      "clusterMaxZoom": 16, // Max zoom to cluster points on
+      "clusterRadius": 10 // Radius of each cluster when clustering points (defaults to 50)
+    });
+
+    map.addLayer({
+      "id": vectorSourceLayer2 + '-clusterd',
+      "source": vectorSourceLayer2,
+      "filter": ['has', 'point_count'],
+      "type": 'circle',
+      "paint" :{
+          "circle-color": 'red',
+          "circle-radius": 3,
+          'circle-stroke-color': '#fff'
+        },
+      'layout': {
+        'visibility': 'visible'
+      }
+    });
+
+    
+    map.addLayer({
+      "id": vectorSourceLayer2 + '-unclusterd',
+      "source": vectorSourceLayer2,
+      filter: ['!', ['has', 'point_count']],
+      "type": 'circle',
+      "paint" :{
+          "circle-color": 'blue',
+          "circle-radius": 3
+        },
+      'layout': {
+        'visibility': 'visible'
+      }
+    });
+    */
+
+    /*
+    ==================
+    Layer interactive  functionalities 
+    ==================
+    */
 
     // Click on feature
     function featureHtml(f) {
@@ -384,10 +507,14 @@ function polyPaintFctZoom(){
 
 });
 
+  /*
+  ==================
+  Toggle visibility on/off
+  ==================
+  */
 
-  // Toggle visibility on/off
-  // After the last frame rendered before the map enters an "idle" state.
-  map.on('idle', () => {
+// After the last frame rendered before the map enters an "idle" state.
+map.on('idle', () => {
     // If these layers were not added to the map, abort
     if (!map.getLayer(vectorSourceLayer2 + '-circle') || 
       !map.getLayer(vectorSourceLayer1 + '-fill')) {
@@ -439,7 +566,7 @@ function polyPaintFctZoom(){
       const layers = document.getElementById('menu');
       layers.appendChild(link);
     }
-  });
+});
 
 </script>
 
