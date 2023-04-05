@@ -13,7 +13,7 @@ Slippy map with a few vector tile layers:
 
 Building and tax data tiles are served with `pg_tile_serv` which produces dynamic vector tiles on the fly from a postgis DB.
 
-OSM tiles are served with `mbtileserver` 
+OSM tiles are served with `mbtileserver`. Vector tiles can be produced with `tippecanoe`. This requires cloning the repo + building from source. It is often important to change the make file to point to a local lib and not a system location.
 
 
 ## Usage
